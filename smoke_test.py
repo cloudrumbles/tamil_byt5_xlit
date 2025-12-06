@@ -31,6 +31,10 @@ def main():
         features=features,
     )
 
+    # subset for smoke test
+    train_subset = dataset["train"].select(range(100))
+    eval_subset = dataset["test"].select(range(20))
+
     def preprocess(examples):
         inputs = examples["english word"]
         targets = examples["native word"]
@@ -52,10 +56,15 @@ def main():
         model_inputs["labels"] = labels["input_ids"]
         return model_inputs
 
-    tokenized = dataset.map(
+    train_tokenized = train_subset.map(
         preprocess,
         batched=True,
-        remove_columns=dataset["train"].column_names,
+        remove_columns=train_subset.column_names,
+    )
+    eval_tokenized = eval_subset.map(
+        preprocess,
+        batched=True,
+        remove_columns=eval_subset.column_names,
     )
 
     data_collator = DataCollatorForSeq2Seq(
@@ -65,38 +74,32 @@ def main():
     )
 
     training_args = Seq2SeqTrainingArguments(
-        output_dir="./byt5-aksharantar-tamil",
+        output_dir="./smoke-test-output",
         eval_strategy="steps",
-        eval_steps=1000,
-        save_strategy="steps",
-        save_steps=1000,
+        eval_steps=5,
+        save_strategy="no",
         learning_rate=1e-4,
-        per_device_train_batch_size=64,
-        per_device_eval_batch_size=64,
-        num_train_epochs=3,
-        weight_decay=0.01,
-        warmup_steps=500,
-        logging_steps=100,
-        bf16=True,
-        predict_with_generate=True,
-        load_best_model_at_end=True,
-        metric_for_best_model="eval_loss",
+        per_device_train_batch_size=1,
+        per_device_eval_batch_size=1,
+        gradient_accumulation_steps=4,
+        max_steps=10,
+        logging_steps=2,
+        fp16=False,
+        use_cpu=True,
         report_to="none",
     )
-
-    eval_split = "validation" if "validation" in tokenized else "test"
 
     trainer = Seq2SeqTrainer(
         model=model,
         args=training_args,
-        train_dataset=tokenized["train"],
-        eval_dataset=tokenized[eval_split],
+        train_dataset=train_tokenized,
+        eval_dataset=eval_tokenized,
         tokenizer=tokenizer,
         data_collator=data_collator,
     )
 
     trainer.train()
-    trainer.save_model("./byt5-aksharantar-tamil-final")
+    print("smoke test passed")
 
 
 if __name__ == "__main__":

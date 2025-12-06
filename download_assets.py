@@ -21,7 +21,10 @@ features = Features({
 
 ds = load_dataset(
     "ai4bharat/Aksharantar",
-    data_files={"train": "tam.zip", "test": "tam.zip"},
+    data_files={
+        "train": "zip://tam_train.json::tam.zip",
+        "test": "zip://tam_test.json::tam.zip",
+    },
     features=features,
 )
 
