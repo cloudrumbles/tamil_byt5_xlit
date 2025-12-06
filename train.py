@@ -1,4 +1,9 @@
-from datasets import load_dataset, Features, Value
+import json
+import zipfile
+from pathlib import Path
+
+from datasets import Dataset, DatasetDict, Features, Value
+from huggingface_hub import hf_hub_download
 from transformers import (
     AutoTokenizer,
     AutoModelForSeq2SeqLM,
@@ -8,11 +13,22 @@ from transformers import (
 )
 
 
-def main():
-    model_name = "google/byt5-small"
+def load_tamil_dataset(data_dir: Path = Path("./data")):
+    """Download and load Tamil transliteration dataset."""
+    data_dir.mkdir(exist_ok=True)
 
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+    train_path = data_dir / "tam_train.json"
+    test_path = data_dir / "tam_test.json"
+
+    if not train_path.exists():
+        print("downloading dataset...")
+        zip_path = hf_hub_download(
+            repo_id="ai4bharat/Aksharantar",
+            filename="tam.zip",
+            repo_type="dataset",
+        )
+        with zipfile.ZipFile(zip_path, "r") as z:
+            z.extractall(data_dir)
 
     features = Features({
         "unique_identifier": Value("string"),
@@ -22,14 +38,23 @@ def main():
         "score": Value("float64"),
     })
 
-    dataset = load_dataset(
-        "ai4bharat/Aksharantar",
-        data_files={
-            "train": "zip://tam_train.json::tam.zip",
-            "test": "zip://tam_test.json::tam.zip",
-        },
-        features=features,
-    )
+    def load_json(path):
+        with open(path) as f:
+            return [json.loads(line) for line in f]
+
+    return DatasetDict({
+        "train": Dataset.from_list(load_json(train_path), features=features),
+        "test": Dataset.from_list(load_json(test_path), features=features),
+    })
+
+
+def main():
+    model_name = "google/byt5-small"
+
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+
+    dataset = load_tamil_dataset()
 
     def preprocess(examples):
         inputs = examples["english word"]
