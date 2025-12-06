@@ -1,0 +1,15 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Training outputs
+smoke-test-output/
+byt5-aksharantar-tamil/
+byt5-aksharantar-tamil-final/

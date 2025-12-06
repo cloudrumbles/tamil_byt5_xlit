@@ -1,0 +1,13 @@
+[project]
+name = "byt5"
+version = "0.1.0"
+description = "ByT5 fine-tuning on Aksharantar Tamil transliteration"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "transformers>=4.35.0",
+    "datasets>=2.14.0",
+    "accelerate>=0.24.0",
+    "sentencepiece",
+    "evaluate",
+]
